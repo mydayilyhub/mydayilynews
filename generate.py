@@ -1,33 +1,65 @@
 import os
-import requests
+import feedparser
 from datetime import datetime, timedelta
-from bs4 import BeautifulSoup
 
-# 시간 (KST)
 now = datetime.utcnow() + timedelta(hours=9)
 
-# 뉴스 소스 (예시: 네이버 IT 뉴스)
-NEWS_URL = "https://news.naver.com/section/105"
+NEWS_SOURCES = {
+    "네이버 IT": "https://rss.etnews.com/Section901.xml",
+    "연합뉴스 IT": "https://www.yna.co.kr/rss/it.xml",
+    "ZDNet Korea": "https://feeds.feedburner.com/zdkorea",
+    "블로터": "https://www.bloter.net/feed"
+}
 
 def fetch_news():
-    res = requests.get(NEWS_URL, headers={"User-Agent": "Mozilla/5.0"})
-    soup = BeautifulSoup(res.text, "html.parser")
+    articles = []
+    for source, url in NEWS_SOURCES.items():
+        feed = feedparser.parse(url)
+        for entry in feed.entries[:3]:
+            articles.append({
+                "source": source,
+                "title": entry.title,
+                "link": entry.link
+            })
+    return articles
 
-    items = []
-    for a in soup.select("a.sa_text_title")[:5]:
-        title = a.get_text(strip=True)
-        link = a["href"]
-        items.append((title, link))
-    return items
+news_list = fetch_news()
 
-news = fetch_news()
+products = [
+    {
+        "name": "무선 블루투스 이어폰",
+        "desc": "일상·업무용으로 많이 선택되는 제품",
+        "link": "https://example.com"
+    },
+    {
+        "name": "노트북 거치대",
+        "desc": "장시간 작업 시 자세 개선",
+        "link": "https://example.com"
+    },
+    {
+        "name": "USB-C 멀티 허브",
+        "desc": "노트북 확장에 필수",
+        "link": "https://example.com"
+    }
+]
 
-html_news = ""
-for title, link in news:
-    html_news += f"""
-    <li>
-      <a href="{link}" target="_blank">{title}</a>
-    </li>
+news_html = ""
+for n in news_list:
+    news_html += f"""
+    <div class="news-item">
+      <span class="source">{n['source']}</span>
+      <a href="{n['link']}" target="_blank">{n['title']}</a>
+    </div>
+    """
+
+product_html = ""
+for p in products:
+    product_html += f"""
+    <div class="product-card">
+      <h3>{p['name']}</h3>
+      <p>{p['desc']}</p>
+      <a href="{p['link']}" target="_blank">자세히 보기</a>
+    </div>
     """
 
 html = f"""
@@ -35,48 +67,31 @@ html = f"""
 <html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>자동 수익 콘텐츠 시스템</title>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+  <title>IT 뉴스 브리핑</title>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     body {{
-      font-family: 'Noto Sans KR', sans-serif;
-      background: #f4f6f8;
-      padding: 40px;
+      margin: 0;
+      font-family: 'Pretendard', sans-serif;
+      background: #f5f6f8;
+      color: #222;
     }}
-    .container {{
-      max-width: 900px;
+    .wrap {{
+      max-width: 960px;
       margin: auto;
-      background: white;
-      padding: 32px;
-      border-radius: 16px;
-      box-shadow: 0 10px 30px rgba(0,0,0,.08);
+      padding: 40px 20px;
     }}
-    h1 {{ margin-top: 0; }}
-    ul {{ padding-left: 20px; }}
-    li {{ margin-bottom: 10px; }}
-    .time {{ color: #666; font-size: 14px; }}
-    footer {{ margin-top: 40px; color: #999; font-size: 13px; }}
-  </style>
-</head>
-<body>
-  <div class="container">
-    <h1>🤖 자동 생성 콘텐츠 사이트</h1>
-    <p class="time">마지막 업데이트: {now.strftime("%Y-%m-%d %H:%M:%S")} KST</p>
-
-    <h2>📰 오늘의 IT 뉴스</h2>
-    <ul>
-      {html_news}
-    </ul>
-
-    <footer>
-      이 페이지는 자동으로 생성됩니다.<br>
-      방문자는 별도 가입 없이 정보를 열람할 수 있습니다.
-    </footer>
-  </div>
-</body>
-</html>
-"""
-
-os.makedirs("_site", exist_ok=True)
-with open("_site/index.html", "w", encoding="utf-8") as f:
-    f.write(html)
+    h1 {{
+      font-size: 28px;
+      margin-bottom: 8px;
+    }}
+    .time {{
+      font-size: 14px;
+      color: #777;
+      margin-bottom: 40px;
+    }}
+    .section {{
+      margin-bottom: 56px;
+    }}
+    .news-item {{
+      background: #fff;
